@@ -1,0 +1,13 @@
+Jawaban Refleksi
+
+1. Kapan native lebih tepat dipilih daripada cross-platform?
+
+Menurut saya, native lebih cocok digunakan kalau aplikasi membutuhkan akses yang lebih banyak ke perangkat, misalnya sensor, kamera, atau Bluetooth. Selain itu, native juga lebih cocok kalau aplikasi membutuhkan performa yang tinggi, seperti aplikasi dengan tampilan atau grafik yang berat.
+
+2. Bagaimana perubahan state berhubungan dengan widget tree dan UI deklaratif?
+
+Di Flutter, tampilan UI mengikuti state yang ada. Jadi, kalau state berubah, Flutter akan memperbarui bagian tampilan yang berhubungan dengan state tersebut. Dengan begitu, tampilan yang muncul akan sesuai dengan data yang terbaru.
+
+3. Mengapa commit kecil dengan pesan jelas bermanfaat bagi pekerjaan tim dan portfolio?
+
+Menurut saya, commit kecil dengan pesan yang jelas lebih mudah untuk dipahami dan dilacak. Kalau terjadi kesalahan, kita juga lebih mudah mengetahui perubahan mana yang menyebabkan masalah dan mengembalikannya jika diperlukan. Dalam kerja tim, hal ini juga bisa membantu mengurangi masalah saat menggabungkan kode. Untuk portofolio, riwayat commit yang rapi juga bisa menunjukkan bahwa kita terbiasa bekerja dengan Git secara teratur.
