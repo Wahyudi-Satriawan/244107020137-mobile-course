@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/todo_provider.dart';
-import 'product_page.dart';
+import '../widgets/todo_tile.dart';
 
 class TodoPage extends ConsumerWidget {
   const TodoPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final todos = ref.watch(todoListProvider);
+    final todos = ref.watch(filteredTodoListProvider);
+    final isFiltered = ref.watch(todoFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ToDo Riverpod'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_bag_outlined),
-            tooltip: 'Halaman Produk',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProductPage(),
-                ),
-              );
-            },
+            tooltip: isFiltered ? 'Tampilkan Semua' : 'Hanya Belum Selesai',
+            icon: Icon(
+              isFiltered ? Icons.filter_alt : Icons.filter_alt_outlined,
+            ),
+            onPressed: () => ref.read(todoFilterProvider.notifier).toggle(),
           ),
         ],
       ),
@@ -32,26 +28,7 @@ class TodoPage extends ConsumerWidget {
           ? const Center(child: Text('Belum ada tugas'))
           : ListView.builder(
               itemCount: todos.length,
-              itemBuilder: (context, index) => ListTile(
-                leading: Checkbox(
-                  value: todos[index].done,
-                  onChanged: (_) =>
-                      ref.read(todoListProvider.notifier).toggle(index),
-                ),
-                title: Text(
-                  todos[index].title,
-                  style: TextStyle(
-                    decoration: todos[index].done
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () =>
-                      ref.read(todoListProvider.notifier).remove(index),
-                ),
-              ),
+              itemBuilder: (context, index) => TodoTile(todo: todos[index]),
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),
@@ -74,10 +51,9 @@ class TodoPage extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref
-                    .read(todoListProvider.notifier)
-                    .add(controller.text.trim());
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                ref.read(todoListProvider.notifier).add(text);
               }
               Navigator.pop(context);
             },

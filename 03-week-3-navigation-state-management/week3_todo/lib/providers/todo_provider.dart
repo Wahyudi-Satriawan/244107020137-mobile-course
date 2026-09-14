@@ -2,18 +2,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Todo {
   Todo(this.title, {this.done = false});
+
   final String title;
   final bool done;
 
-  Todo copyWith({String? title, bool? done}) =>
-      Todo(title ?? this.title, done: done ?? this.done);
+  Todo copyWith({String? title, bool? done}) {
+    return Todo(
+      title ?? this.title,
+      done: done ?? this.done,
+    );
+  }
 }
 
 class TodoListNotifier extends Notifier<List<Todo>> {
   @override
   List<Todo> build() => const [];
 
-  void add(String title) => state = [...state, Todo(title)];
+  void add(String title) {
+    state = [...state, Todo(title)];
+  }
 
   void toggle(int index) {
     final todos = [...state];
@@ -21,8 +28,32 @@ class TodoListNotifier extends Notifier<List<Todo>> {
     state = todos;
   }
 
-  void remove(int index) => state = [...state]..removeAt(index);
+  void remove(int index) {
+    state = [...state]..removeAt(index);
+  }
 }
 
-final todoListProvider =
-    NotifierProvider<TodoListNotifier, List<Todo>>(TodoListNotifier.new);
+final todoListProvider = NotifierProvider<TodoListNotifier, List<Todo>>(
+  TodoListNotifier.new,
+);
+
+class TodoFilterNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+}
+
+final todoFilterProvider = NotifierProvider<TodoFilterNotifier, bool>(
+  TodoFilterNotifier.new,
+);
+
+final filteredTodoListProvider = Provider<List<Todo>>((ref) {
+  final todos = ref.watch(todoListProvider);
+  final onlyPending = ref.watch(todoFilterProvider);
+
+  if (onlyPending) {
+    return todos.where((todo) => !todo.done).toList();
+  }
+  return todos;
+});
