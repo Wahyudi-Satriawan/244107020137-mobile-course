@@ -9,8 +9,10 @@ Dio createDio() {
       headers: {'Accept': 'application/json'},
     ),
   );
+
   dio.interceptors.add(
-    LogInterceptor(requestBody: true, responseBody: false),
+    LogInterceptor(requestBody: false, responseBody: false),
   );
+
   return dio;
 }

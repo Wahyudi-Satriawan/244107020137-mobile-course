@@ -20,7 +20,7 @@ class NoteRepository {
       title: title,
       body: body,
       updatedAt: DateTime.now(),
-      dirty: true,
+      dirty: true, // Ditandai kotor saat baru dibuat offline
     );
     final id = await db.insert('notes', note.toMap());
     return Note(
@@ -39,8 +39,7 @@ class NoteRepository {
 
   Future<int> countDirty() async {
     final db = await _openDb();
-    final rows = await db.rawQuery(
-        'SELECT COUNT(*) AS c FROM notes WHERE dirty = 1');
+    final rows = await db.rawQuery('SELECT COUNT(*) AS c FROM notes WHERE dirty = 1');
     return ((rows.first['c'] as num?)?.toInt() ?? 0);
   }
 
