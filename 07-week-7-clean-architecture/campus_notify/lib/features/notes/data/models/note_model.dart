@@ -1,12 +1,12 @@
-import '../entities/note.dart';
+import '../../domain/entities/note.dart';
 
 class NoteModel extends Note {
-  NoteModel({
+  const NoteModel({
     super.id,
     required super.title,
-    required super.body,
+    super.body = '',
     required super.updatedAt,
-    super.dirty = 0,
+    super.dirty = false,
   });
 
   Map<String, Object?> toMap() => {
@@ -14,7 +14,7 @@ class NoteModel extends Note {
         'title': title,
         'body': body,
         'updated_at': updatedAt.toIso8601String(),
-        'dirty': dirty,
+        'dirty': dirty ? 1 : 0,
       };
 
   factory NoteModel.fromMap(Map<String, Object?> map) {
@@ -24,7 +24,7 @@ class NoteModel extends Note {
       body: map['body'] as String? ?? '',
       updatedAt: DateTime.tryParse(map['updated_at'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      dirty: ((map['dirty'] as num?)?.toInt() ?? 0),
+      dirty: ((map['dirty'] as num?)?.toInt() ?? 0) == 1,
     );
   }
 

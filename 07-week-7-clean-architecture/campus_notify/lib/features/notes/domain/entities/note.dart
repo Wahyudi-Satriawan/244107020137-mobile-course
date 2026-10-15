@@ -1,15 +1,15 @@
 class Note {
-  Note({
+  const Note({
     this.id,
     required this.title,
     required this.body,
     required this.updatedAt,
-    this.dirty = 0,
+    this.dirty = false,
   });
 
-  int? id;
+  final int? id;
   final String title;
   final String body;
   final DateTime updatedAt;
-  int dirty;
+  final bool dirty;
 }

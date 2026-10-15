@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
-import 'auth_repository.dart';
-import 'token_store.dart';
+﻿import 'package:dio/dio.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../storage/token_store.dart';
 
 Dio buildApiClient(TokenStore store, AuthRepository auth) {
   final dio = Dio(BaseOptions(baseUrl: 'https://example-kampus-api.test'));

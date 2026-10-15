@@ -1,4 +1,4 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
+﻿import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../utils/route_parser.dart';
 
@@ -70,7 +70,8 @@ class PushService {
       await _localNotifications.show(
         id: message.hashCode,
         title: message.notification?.title ?? 'Pengumuman Baru',
-        body: message.notification?.body ?? 'Ketuk untuk melihat detail pengumuman.',
+        body: message.notification?.body ??
+            'Ketuk untuk melihat detail pengumuman.',
         notificationDetails: const NotificationDetails(android: androidDetails),
         payload: route,
       );

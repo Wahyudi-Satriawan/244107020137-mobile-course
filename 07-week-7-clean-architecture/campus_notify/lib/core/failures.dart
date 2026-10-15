@@ -1,12 +1,12 @@
-abstract class Failure {
-  Failure(this.message);
+sealed class Failure {
+  const Failure(this.message);
   final String message;
 }
 
 class LocalFailure extends Failure {
-  LocalFailure(super.message);
+  const LocalFailure(super.message);
 }
 
 class NetworkFailure extends Failure {
-  NetworkFailure(super.message);
+  const NetworkFailure(super.message);
 }

@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
+import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/loading_view.dart';
+import '../providers/auth_providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -10,8 +12,16 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _emailController = TextEditingController(text: 'mahasiswa@polinema.ac.id');
+  final _emailController =
+      TextEditingController(text: 'mahasiswa@polinema.ac.id');
   final _passwordController = TextEditingController(text: 'password123');
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +45,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
             const SizedBox(height: 20),
             if (authState.isLoading)
-              const CircularProgressIndicator()
+              const AppLoadingView()
             else
               ElevatedButton(
                 onPressed: () {
@@ -49,9 +59,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             if (authState.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
-                child: Text(
-                  'Error: ${authState.error}',
-                  style: const TextStyle(color: Colors.red),
+                child: AppErrorView(
+                  message: 'Error: ${authState.error}',
                 ),
               ),
           ],
