@@ -1,4 +1,4 @@
-﻿import '../entities/auth_session.dart';
+import '../entities/auth_session.dart';
 
 abstract class AuthRepository {
   Future<AuthSession> login({
@@ -6,4 +6,7 @@ abstract class AuthRepository {
     required String password,
   });
   Future<String> refresh(String refreshToken);
+  Future<bool> isLoggedIn();
+  Future<void> logout();
 }
+
