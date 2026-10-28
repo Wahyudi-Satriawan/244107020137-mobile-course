@@ -1,4 +1,4 @@
-﻿import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../utils/route_parser.dart';
 
@@ -8,12 +8,38 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class PushService {
-  static final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
-  static String? pendingDeepLink;
+  final FirebaseMessaging _messaging;
+  final FlutterLocalNotificationsPlugin _localNotifications;
 
-  static Future<bool> requestNotificationPermission() async {
-    final settings = await FirebaseMessaging.instance.requestPermission(
+  void Function(String route)? _onNavigate;
+  String? _pendingRoute;
+
+  PushService({
+    FirebaseMessaging? messaging,
+    FlutterLocalNotificationsPlugin? localNotifications,
+  })  : _messaging = messaging ?? FirebaseMessaging.instance,
+        _localNotifications =
+            localNotifications ?? FlutterLocalNotificationsPlugin();
+
+  void setNavigationHandler(void Function(String route) onNavigate) {
+    _onNavigate = onNavigate;
+    if (_pendingRoute != null) {
+      final route = _pendingRoute!;
+      _pendingRoute = null;
+      onNavigate(route);
+    }
+  }
+
+  void _navigateTo(String route) {
+    if (_onNavigate != null) {
+      _onNavigate!(route);
+    } else {
+      _pendingRoute = route;
+    }
+  }
+
+  Future<bool> requestNotificationPermission() async {
+    final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -22,7 +48,7 @@ class PushService {
         settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
-  static Future<void> initLocalNotifications() async {
+  Future<void> initLocalNotifications() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
 
@@ -34,35 +60,53 @@ class PushService {
     await _localNotifications.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (response.payload != null && response.payload!.isNotEmpty) {
-          pendingDeepLink = response.payload;
+        final payload = response.payload;
+        if (payload != null && payload.trim().isNotEmpty) {
+          _navigateTo(payload.trim());
         }
       },
     );
+
+    // Create Android Notification Channel for Android 8.0+
+    const androidChannel = AndroidNotificationChannel(
+      'campus_channel',
+      'Pengumuman Kampus',
+      description: 'Saluran notifikasi resmi pengumuman kampus',
+      importance: Importance.high,
+    );
+
+    final androidImplementation = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImplementation != null) {
+      await androidImplementation.createNotificationChannel(androidChannel);
+    }
   }
 
-  static Future<void> initFcmToken({
+  Future<void> initFcmToken({
     required Future<void> Function(String token) onToken,
   }) async {
-    final token = await FirebaseMessaging.instance.getToken();
+    final token = await _messaging.getToken();
     if (token != null) {
       await onToken(token);
     }
 
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+    _messaging.onTokenRefresh.listen((newToken) async {
       await onToken(newToken);
     });
 
-    await FirebaseMessaging.instance.subscribeToTopic('pengumuman-kampus');
+    await _messaging.subscribeToTopic('pengumuman-kampus');
   }
 
-  static void listenForeground(void Function(String route) navigateTo) {
+  void initPushListeners() {
+    // 1. Foreground FCM message -> Display local notification
     FirebaseMessaging.onMessage.listen((message) async {
       final route = routeFromMessage(message.data);
 
       const androidDetails = AndroidNotificationDetails(
         'campus_channel',
         'Pengumuman Kampus',
+        channelDescription: 'Saluran notifikasi resmi pengumuman kampus',
         importance: Importance.high,
         priority: Priority.high,
       );
@@ -77,21 +121,30 @@ class PushService {
       );
     });
 
+    // 2. Background -> Opened app by tapping FCM notification tray
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       final route = routeFromMessage(message.data);
-      navigateTo(route);
+      _navigateTo(route);
     });
   }
 
-  static Future<void> handleTerminated(
-      void Function(String route) navigateTo) async {
-    final initial = await FirebaseMessaging.instance.getInitialMessage();
+  Future<void> handleInitialMessage() async {
+    // 1. Terminated -> Launched via FCM remote notification
+    final initial = await _messaging.getInitialMessage();
     if (initial != null) {
       final route = routeFromMessage(initial.data);
-      navigateTo(route);
-    } else if (pendingDeepLink != null) {
-      navigateTo(pendingDeepLink!);
-      pendingDeepLink = null;
+      _navigateTo(route);
+      return;
+    }
+
+    // 2. Terminated -> Launched via Local notification tap
+    final launchDetails =
+        await _localNotifications.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp ?? false) {
+      final payload = launchDetails?.notificationResponse?.payload;
+      if (payload != null && payload.trim().isNotEmpty) {
+        _navigateTo(payload.trim());
+      }
     }
   }
 }
