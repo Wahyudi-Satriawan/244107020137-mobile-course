@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class FcmTokenCard extends StatelessWidget {
   final String token;
@@ -9,9 +9,7 @@ class FcmTokenCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.blue.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
@@ -24,10 +22,7 @@ class FcmTokenCard extends StatelessWidget {
                 children: [
                   const Text(
                     'FCM Token (Truncated):',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 2),
                   Text(

@@ -10,8 +10,12 @@ String friendlyErrorMessage(Object? error) {
         return 'Koneksi bermasalah. Periksa internet Anda.';
       case DioExceptionType.badResponse:
         final code = error.response?.statusCode;
-        if (code == 404) return 'Data tidak ditemukan (404).';
-        if (code != null && code >= 500) return 'Server sedang bermasalah ($code).';
+        if (code == 404) {
+          return 'Data tidak ditemukan (404).';
+        }
+        if (code != null && code >= 500) {
+          return 'Server sedang bermasalah ($code).';
+        }
         return 'Terjadi kesalahan dari server ($code).';
       default:
         return 'Terjadi kesalahan jaringan yang tidak dikenal.';

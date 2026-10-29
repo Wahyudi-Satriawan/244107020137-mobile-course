@@ -6,7 +6,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final TokenStore _tokenStore;
 
   AuthRepositoryImpl({TokenStore? tokenStore})
-      : _tokenStore = tokenStore ?? TokenStore();
+    : _tokenStore = tokenStore ?? TokenStore();
 
   @override
   Future<AuthSession> login({
@@ -20,10 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
       refresh: 'mock-refresh-for-$email',
     );
 
-    await _tokenStore.save(
-      access: session.access,
-      refresh: session.refresh,
-    );
+    await _tokenStore.save(access: session.access, refresh: session.refresh);
 
     return session;
   }
@@ -54,4 +51,3 @@ class AuthRepositoryImpl implements AuthRepository {
     await _tokenStore.clear();
   }
 }
-

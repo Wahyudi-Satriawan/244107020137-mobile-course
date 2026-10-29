@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/di/injection.dart';
 
 // Presentation layer state
-final authStateProvider =
-    AsyncNotifierProvider<AuthNotifier, bool>(AuthNotifier.new);
+final authStateProvider = AsyncNotifierProvider<AuthNotifier, bool>(
+  AuthNotifier.new,
+);
 
 class AuthNotifier extends AsyncNotifier<bool> {
   @override
@@ -15,10 +17,9 @@ class AuthNotifier extends AsyncNotifier<bool> {
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await ref.read(loginUseCaseProvider).call(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(loginUseCaseProvider)
+          .call(email: email, password: password);
       return true;
     });
   }

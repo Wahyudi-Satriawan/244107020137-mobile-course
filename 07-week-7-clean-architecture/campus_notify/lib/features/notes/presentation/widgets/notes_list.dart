@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
 import '../../domain/entities/note.dart';
 
 class NotesList extends StatelessWidget {
@@ -13,10 +14,7 @@ class NotesList extends StatelessWidget {
       itemBuilder: (context, index) {
         final note = notes[index];
         return Card(
-          child: ListTile(
-            title: Text(note.title),
-            subtitle: Text(note.body),
-          ),
+          child: ListTile(title: Text(note.title), subtitle: Text(note.body)),
         );
       },
     );

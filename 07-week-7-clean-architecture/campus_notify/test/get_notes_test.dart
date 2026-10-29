@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:campus_notify/core/failures.dart';
 import 'package:campus_notify/features/notes/domain/entities/note.dart';
 import 'package:campus_notify/features/notes/domain/repositories/note_repository.dart';
@@ -13,28 +13,22 @@ class FakeNoteRepository implements NoteRepository {
   @override
   Future<(List<Note>, Failure?)> fetchNotes() async {
     if (fail) {
-      return (
-        const <Note>[],
-        const LocalFailure('db locked (simulasi)'),
-      );
+      return (const <Note>[], const LocalFailure('db locked (simulasi)'));
     }
     return (items, null);
   }
 
   @override
-  Future<(Note?, Failure?)> addNote({
-    required String title,
-    String body = '',
-  }) {
+  Future<(Note?, Failure?)> addNote({required String title, String body = ''}) {
     throw UnimplementedError();
   }
 }
 
 void main() {
   test('GetNotes meneruskan daftar dari repository', () async {
-    final repo = FakeNoteRepository(items: [
-      Note(title: 'A', body: '', updatedAt: DateTime(2026, 3, 27)),
-    ]);
+    final repo = FakeNoteRepository(
+      items: [Note(title: 'A', body: '', updatedAt: DateTime(2026, 3, 27))],
+    );
     final result = await GetNotes(repo).call();
     expect(result.$2, isNull);
     expect(result.$1.length, 1);

@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../providers/auth_providers.dart';
@@ -12,8 +13,9 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _emailController =
-      TextEditingController(text: 'mahasiswa@polinema.ac.id');
+  final _emailController = TextEditingController(
+    text: 'mahasiswa@polinema.ac.id',
+  );
   final _passwordController = TextEditingController(text: 'password123');
 
   @override
@@ -49,19 +51,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             else
               ElevatedButton(
                 onPressed: () {
-                  ref.read(authStateProvider.notifier).login(
-                        _emailController.text,
-                        _passwordController.text,
-                      );
+                  ref
+                      .read(authStateProvider.notifier)
+                      .login(_emailController.text, _passwordController.text);
                 },
                 child: const Text('Login'),
               ),
             if (authState.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
-                child: AppErrorView(
-                  message: 'Error: ${authState.error}',
-                ),
+                child: AppErrorView(message: 'Error: ${authState.error}'),
               ),
           ],
         ),

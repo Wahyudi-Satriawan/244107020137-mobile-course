@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../utils/route_parser.dart';
 
 @pragma('vm:entry-point')
@@ -17,9 +18,9 @@ class PushService {
   PushService({
     FirebaseMessaging? messaging,
     FlutterLocalNotificationsPlugin? localNotifications,
-  })  : _messaging = messaging ?? FirebaseMessaging.instance,
-        _localNotifications =
-            localNotifications ?? FlutterLocalNotificationsPlugin();
+  }) : _messaging = messaging ?? FirebaseMessaging.instance,
+       _localNotifications =
+           localNotifications ?? FlutterLocalNotificationsPlugin();
 
   void setNavigationHandler(void Function(String route) onNavigate) {
     _onNavigate = onNavigate;
@@ -77,7 +78,8 @@ class PushService {
 
     final androidImplementation = _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidImplementation != null) {
       await androidImplementation.createNotificationChannel(androidChannel);
     }
@@ -114,7 +116,8 @@ class PushService {
       await _localNotifications.show(
         id: message.hashCode,
         title: message.notification?.title ?? 'Pengumuman Baru',
-        body: message.notification?.body ??
+        body:
+            message.notification?.body ??
             'Ketuk untuk melihat detail pengumuman.',
         notificationDetails: const NotificationDetails(android: androidDetails),
         payload: route,
@@ -138,8 +141,8 @@ class PushService {
     }
 
     // 2. Terminated -> Launched via Local notification tap
-    final launchDetails =
-        await _localNotifications.getNotificationAppLaunchDetails();
+    final launchDetails = await _localNotifications
+        .getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp ?? false) {
       final payload = launchDetails?.notificationResponse?.payload;
       if (payload != null && payload.trim().isNotEmpty) {

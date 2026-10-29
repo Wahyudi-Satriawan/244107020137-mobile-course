@@ -1,4 +1,4 @@
-﻿String routeFromMessage(Map<String, dynamic> data) {
+String routeFromMessage(Map<String, dynamic> data) {
   final rawRoute = data['route'] as String?;
   if (rawRoute == null || rawRoute.trim().isEmpty) {
     return '/';

@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../widgets/announcement_tile.dart';
 import '../widgets/fcm_token_card.dart';
@@ -16,6 +17,11 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Dashboard Pengumuman'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.note_alt_outlined),
+            tooltip: 'Catatan',
+            onPressed: () => context.push('/notes'),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authStateProvider.notifier).logout(),

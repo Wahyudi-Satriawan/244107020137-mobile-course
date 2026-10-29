@@ -6,14 +6,10 @@ class LoginUseCase {
 
   const LoginUseCase(this._repository);
 
-  Future<AuthSession> call({
-    required String email,
-    required String password,
-  }) {
+  Future<AuthSession> call({required String email, required String password}) {
     if (!email.contains('@') || password.length < 6) {
       throw Exception('Email atau kata sandi tidak valid');
     }
     return _repository.login(email: email, password: password);
   }
 }
-

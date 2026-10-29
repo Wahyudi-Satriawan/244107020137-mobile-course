@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+
 import '../../../../core/failures.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/repositories/note_repository.dart';
@@ -17,10 +18,7 @@ class NoteRepositoryImpl implements NoteRepository {
       final notes = rows.map((r) => NoteModel.fromMap(r).toEntity()).toList();
       return (notes, null);
     } catch (e) {
-      return (
-        const <Note>[],
-        LocalFailure('Gagal membaca catatan: $e'),
-      );
+      return (const <Note>[], LocalFailure('Gagal membaca catatan: $e'));
     }
   }
 

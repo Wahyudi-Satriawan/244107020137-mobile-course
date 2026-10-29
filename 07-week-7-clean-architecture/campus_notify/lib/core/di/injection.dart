@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../services/push_service.dart';
 import '../storage/token_store.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -17,9 +18,7 @@ final tokenStoreProvider = Provider<TokenStore>((ref) {
 
 // Auth Feature - Data Layer
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl(
-    tokenStore: ref.watch(tokenStoreProvider),
-  );
+  return AuthRepositoryImpl(tokenStore: ref.watch(tokenStoreProvider));
 });
 
 // Auth Feature - Domain Layer (Use Cases)

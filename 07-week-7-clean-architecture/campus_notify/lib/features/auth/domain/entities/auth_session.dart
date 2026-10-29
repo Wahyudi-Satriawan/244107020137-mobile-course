@@ -1,4 +1,4 @@
-﻿class AuthSession {
+class AuthSession {
   final String access;
   final String refresh;
 

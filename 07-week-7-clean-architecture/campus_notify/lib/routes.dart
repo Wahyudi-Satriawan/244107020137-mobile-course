@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'core/di/injection.dart';
 import 'features/announcements/presentation/pages/announcement_page.dart';
 import 'features/announcements/presentation/pages/home_page.dart';
@@ -8,8 +9,9 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_providers.dart';
 import 'features/notes/presentation/pages/notes_page.dart';
 
-final fcmTokenProvider =
-    NotifierProvider<FcmTokenNotifier, String>(FcmTokenNotifier.new);
+final fcmTokenProvider = NotifierProvider<FcmTokenNotifier, String>(
+  FcmTokenNotifier.new,
+);
 
 class FcmTokenNotifier extends Notifier<String> {
   @override
@@ -46,10 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/',
         builder: (context, state) => Consumer(
@@ -66,10 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AnnouncementPage(id: id);
         },
       ),
-      GoRoute(
-        path: '/notes',
-        builder: (context, state) => const NotesPage(),
-      ),
+      GoRoute(path: '/notes', builder: (context, state) => const NotesPage()),
     ],
   );
 
