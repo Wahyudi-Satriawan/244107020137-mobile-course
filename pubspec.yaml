@@ -1,4 +1,4 @@
-﻿name: mobile_course
+name: mobile_course
 description: Root workspace
 publish_to: "none"
 version: 1.0.0+1
@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_riverpod: ^3.4.3
+  flutter_secure_storage: ^11.2.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

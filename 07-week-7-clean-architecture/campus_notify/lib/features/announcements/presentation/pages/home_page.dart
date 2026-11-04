@@ -18,6 +18,11 @@ class HomePage extends ConsumerWidget {
         title: const Text('Dashboard Pengumuman'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            tooltip: 'Tanya AI',
+            onPressed: () => context.push('/chat'),
+          ),
+          IconButton(
             icon: const Icon(Icons.note_alt_outlined),
             tooltip: 'Catatan',
             onPressed: () => context.push('/notes'),
@@ -58,6 +63,11 @@ class HomePage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/chat'),
+        icon: const Icon(Icons.chat_bubble_outline),
+        label: const Text('Tanya AI'),
       ),
     );
   }
