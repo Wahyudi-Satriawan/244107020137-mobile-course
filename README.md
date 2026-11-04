@@ -6,6 +6,20 @@
 
 ---
 
+## 🤖 Laporan Modul 10 (Integrasi Fitur AI)
+
+Laporan lengkap untuk Modul 10 (*Integrasi Fitur AI - Chat Assistant*) pada aplikasi **Campus Notify** tersedia pada tautan berikut:
+
+👉 **[Buka Laporan Praktikum Modul 10 (10-week-10-ai-feature-integration/README.md)](10-week-10-ai-feature-integration/README.md)**
+
+### Dokumen & Fitur Terkait Modul 10:
+- 📝 [AI Log (System Prompt, User Prompt, Output)](10-week-10-ai-feature-integration/docs/ai-log.md)
+- 🤖 [AI Service (Gemini REST API)](07-week-7-clean-architecture/campus_notify/lib/ai/ai_service.dart)
+- 💬 [Chat Screen & Fallback AlertDialog](07-week-7-clean-architecture/campus_notify/lib/features/ai_chat/presentation/pages/chat_screen.dart)
+- 🧪 [Unit Test AI Service & Fallback](test/ai_service_test.dart)
+
+---
+
 ## 🚀 Laporan Evaluasi Tengah Semester (Mid-Project Review)
 
 Laporan lengkap untuk Codelab Minggu 08 (*Mid-Project Review & Code Review*) pada aplikasi **Campus Notify** tersedia pada tautan berikut:
@@ -31,3 +45,4 @@ Laporan lengkap untuk Codelab Minggu 08 (*Mid-Project Review & Code Review*) pad
 - `07-week-7-clean-architecture/` - Feature-First Clean Architecture (Campus Notify)
 - `08-week-8-mid-project-review/` - **Mid-Project Review, Code Review, & CI Automation**
 - `09-week-9-ai-assisted-development/` - AI-Assisted Development & Fitur Pencarian
+- `10-week-10-ai-feature-integration/` - **Integrasi Fitur AI (Chat Assistant Gemini & Secure Storage)**

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/di/injection.dart';
+import 'features/ai_chat/presentation/pages/chat_screen.dart';
 import 'features/announcements/presentation/pages/announcement_page.dart';
 import 'features/announcements/presentation/pages/home_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
@@ -66,6 +67,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: '/notes', builder: (context, state) => const NotesPage()),
+      GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
+      GoRoute(
+        path: '/ai-chat',
+        builder: (context, state) => const ChatScreen(),
+      ),
     ],
   );
 
