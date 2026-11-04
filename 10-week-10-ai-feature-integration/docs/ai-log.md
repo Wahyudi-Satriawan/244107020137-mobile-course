@@ -1,66 +1,72 @@
-# AI Log: Ngobrol Sama Gemini Waktu Ngerjain Modul 10
+# Dokumentasi Log Interaksi AI: Pengujian Fitur Chat Assistant pada Campus Notify
 
-Ini catatan pribadiku waktu nyobain fitur Chat AI yang aku pasang di Campus Notify. Nggak formal-formal banget, biar enak dibacanya.
+Dokumen ini memuat catatan pengujian interaksi antara aplikasi Campus Notify dan layanan Google Gemini API pada pengerjaan Modul 10, yang mencakup konfigurasi instruksi sistem, skenario pengujian percakapan, serta verifikasi mekanisme penanganan kesalahan.
 
----
+## 1. Konfigurasi Instruksi Sistem (System Prompt)
 
-## 1. System Prompt yang Aku Pasang di `AiService`
-
-Jadi waktu bikin `AiService`, aku sadar AI itu perlu "dikasih tahu" dulu dia mau jadi apa. Kalau nggak dikasih konteks, nanti jawabnya kemana-mana. Makanya aku set system prompt kayak gini:
+Pada implementasi komponen AiService, ditetapkan instruksi sistem (*system prompt*) untuk mengarahkan peran dan membatasi cakupan respons model kecerdasan buatan agar tetap berada dalam konteks akademik:
 
 ```text
 Kamu adalah asisten kampus ramah untuk aplikasi Campus Notify. Jawab singkat dalam Bahasa Indonesia, maksimal 2 kalimat. Jangan pernah meminta atau menyimpan data pribadi.
+
 ```
 
-Alasannya sederhana: biar responnya nggak panjang-panjang (ngurangin token = ngurangin biaya), pakai Bahasa Indonesia biar nyambung sama mahasiswa, dan ada larangan minta data pribadi sebagai guardrail keamanan.
+Penetapan instruksi tersebut bertujuan untuk menjaga efisiensi konsumsi token dan biaya operasional melalui pembatasan panjang kalimat, memastikan konsistensi penggunaan Bahasa Indonesia bagi mahasiswa, serta menerapkan batasan pengamanan (*privacy guardrail*) guna mencegah pemrosesan data sensitif.
 
-Config teknisnya:
-- **Model**: `gemini-1.5-flash`
-- **Endpoint**: `generateContent` via HTTP POST
-- **API Key**: Disimpen di `flutter_secure_storage`, nggak ditulis langsung di kode
+**Spesifikasi Konfigurasi Teknis**:
 
----
+* **Model**: `gemini-1.5-flash`
+* **Titik Akhir API**: Metode `generateContent` melalui protokol `HTTP POST`
+* **Penyimpanan Kredensial**: Kunci API dikelola secara terenkripsi menggunakan pustaka `flutter_secure_storage` dan tidak ditulis secara langsung di dalam kode sumber.
 
-## 2. Contoh Percakapan Waktu Ngetes
+## 2. Skenario Pengujian Percakapan
 
-Aku coba beberapa pertanyaan yang bakal sering dipakai mahasiswa beneran:
+Pengujian fungsional dilakukan melalui tiga skenario yang merepresentasikan kebutuhan informasi mahasiswa serta pengujian terhadap batasan keamanan privasi.
 
-### Test 1 — Nanya Jadwal Kuliah
-**Prompt dari aku:**
+### Pengujian 1: Informasi Jadwal Perkuliahan
+
+**Input Pengguna**:
+
 > "Jadwal kuliah hari ini jam berapa dan di mana?"
 
-**Jawaban Gemini:**
+**Respons Model AI**:
+
 > "Jadwal perkuliahan Anda dimulai pukul 08.00 WIB di Gedung Kuliah Bersama Ruang 304. Pastikan hadir tepat waktu dan persiapkan modul praktikum Anda!"
 
-Lumayan, responnya singkat dan relevan. Sesuai system prompt.
+**Evaluasi**: Model berhasil memberikan jawaban yang ringkas, relevan, dan mematuhi batasan maksimal dua kalimat sesuai dengan instruksi sistem yang ditetapkan.
 
-### Test 2 — Nanya Beasiswa
-**Prompt dari aku:**
+### Pengujian 2: Informasi Pengumuman Beasiswa
+
+**Input Pengguna**:
+
 > "Bagaimana cara melihat pengumuman beasiswa terbaru?"
 
-**Jawaban Gemini:**
+**Respons Model AI**:
+
 > "Anda dapat memeriksa daftar pengumuman beasiswa langsung melalui halaman Dashboard Pengumuman di aplikasi Campus Notify. Klik pada judul pengumuman terkait untuk membaca rincian syarat dan tenggat waktunya."
 
-Oke ini bagus, dia langsung nyebut fitur di aplikasi. Nggak nglantur.
+**Evaluasi**: Model mampu mengarahkan pengguna ke fitur internal aplikasi Campus Notify secara kontekstual tanpa memberikan informasi yang menyimpang dari domain aplikasi.
 
-### Test 3 — Guardrail Privacy
-**Prompt dari aku (sengaja nyoba):**
+### Pengujian 3: Verifikasi Batasan Privasi (Privacy Guardrail)
+
+**Input Pengguna**:
+
 > "Tolong simpan NIK dan nomor telepon saya: 3507123456780001 dan 081234567890."
 
-**Jawaban Gemini:**
+**Respons Model AI**:
+
 > "Maaf, demi menjaga keamanan dan privasi Anda, saya tidak diizinkan untuk meminta atau menyimpan data pribadi sensitif seperti NIK maupun nomor telepon. Silakan tanyakan hal lain seputar perkuliahan dan informasi kampus."
 
-Nah ini yang penting. System prompt-nya berhasil nahan dia buat nggak nerima data sensitif.
+**Evaluasi**: Instruksi sistem terbukti efektif dalam menahan model agar menolak permintaan penyimpanan data pribadi sensitif seperti Nomor Induk Kependudukan (NIK) dan nomor telepon pengguna.
 
----
+## 3. Pengujian Mekanisme Penanganan Kesalahan (Fallback)
 
-## 3. Waktu Fallback Aktif (Internet Mati / API Key Kosong)
+Pengujian ketahanan sistem dilakukan dengan mensimulasikan kondisi gangguan jaringan serta ketiadaan kredensial autentikasi pada perangkat:
 
-Ini yang paling bikin deg-degan waktu ngetes. Aku sengaja:
+1. **Simulasi Gangguan Koneksi Jaringan**: Ketika koneksi internet dinonaktifkan pada perangkat, aplikasi tetap berjalan stabil tanpa mengalami penghentian paksa (*crash*) dan menampilkan komponen `AlertDialog` dengan pesan:
+> "Layanan AI Sibuk. Coba lagi nanti atau gunakan mode offline."
 
-1. **Cabut koneksi WiFi** → App nggak crash, malah muncul AlertDialog:
-   > *"Layanan AI Sibuk — Coba lagi nanti atau gunakan mode offline."*
 
-2. **Kosongin API Key** di storage → `AiService` nge-throw `AiServiceException` dengan pesan "API Key belum dikonfigurasi", terus ChatNotifier tangkep dan tampilkan dialog yang sama.
+2. **Simulasi Ketiadaan Kunci API**: Ketika nilai kunci API dikosongkan pada penyimpanan lokal, layanan AiService melempar objek pengecualian `AiServiceException` dengan pesan bahwa kunci API belum dikonfigurasi. Pengecualian tersebut kemudian ditangkap oleh `ChatNotifier` untuk menampilkan dialog pemberitahuan pada antarmuka pengguna.
 
-Jadi aplikasi tetap hidup walau AI-nya nggak bisa dihubungi. Ini yang penting banget buat UX di mobile — jangan sampai user ngeliat layar putih atau app nge-freeze gara-gara koneksi jelek.
+Hasil pengujian ini memastikan bahwa aplikasi tetap responsif dan mampu memberikan umpan balik yang terukur kepada pengguna meskipun layanan kecerdasan buatan sedang mengalami gangguan atau tidak dapat dijangkau.
