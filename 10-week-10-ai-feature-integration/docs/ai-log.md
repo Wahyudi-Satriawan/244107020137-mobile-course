@@ -1,4 +1,4 @@
-# Dokumentasi Log Interaksi AI: Pengujian Fitur Chat Assistant pada Campus Notify
+# Dokumentasi Log Interaksi AI: Pengujian Fitur Chat Assistant pada Campus Notify.
 
 Dokumen ini memuat catatan pengujian interaksi antara aplikasi Campus Notify dan layanan Google Gemini API pada pengerjaan Modul 10, yang mencakup konfigurasi instruksi sistem, skenario pengujian percakapan, serta verifikasi mekanisme penanganan kesalahan.
 

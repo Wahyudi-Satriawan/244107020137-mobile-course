@@ -1,6 +1,6 @@
 # Modul 10: Integrasi Fitur AI Chat Assistant pada Campus Notify
 
-## Identitas Mahasiswa
+## Identitas Mahasiswa.
 
 | Atribut | Keterangan |
 | --- | --- |
