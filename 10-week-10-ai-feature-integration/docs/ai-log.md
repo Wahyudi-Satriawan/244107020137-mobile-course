@@ -1,57 +1,66 @@
-# AI Log: Integrasi Fitur AI (Chat Assistant) - Modul 10
+# AI Log: Ngobrol Sama Gemini Waktu Ngerjain Modul 10
 
-Log ini mencatat konfigurasi *System Prompt*, *User Prompt*, dan contoh *Output* dari integrasi fitur AI Chat Assistant pada aplikasi **Campus Notify** menggunakan Google Gemini REST API.
+Ini catatan pribadiku waktu nyobain fitur Chat AI yang aku pasang di Campus Notify. Nggak formal-formal banget, biar enak dibacanya.
 
 ---
 
-## 1. System Prompt
+## 1. System Prompt yang Aku Pasang di `AiService`
 
-System prompt digunakan untuk menetapkan persona asisten kampus, membatasi panjang respons, menetapkan bahasa komunikasi, serta menjamin privasi pengguna agar AI tidak pernah meminta atau menyimpan data pribadi.
+Jadi waktu bikin `AiService`, aku sadar AI itu perlu "dikasih tahu" dulu dia mau jadi apa. Kalau nggak dikasih konteks, nanti jawabnya kemana-mana. Makanya aku set system prompt kayak gini:
 
 ```text
 Kamu adalah asisten kampus ramah untuk aplikasi Campus Notify. Jawab singkat dalam Bahasa Indonesia, maksimal 2 kalimat. Jangan pernah meminta atau menyimpan data pribadi.
 ```
 
-### Parameter Konfigurasi:
+Alasannya sederhana: biar responnya nggak panjang-panjang (ngurangin token = ngurangin biaya), pakai Bahasa Indonesia biar nyambung sama mahasiswa, dan ada larangan minta data pribadi sebagai guardrail keamanan.
+
+Config teknisnya:
 - **Model**: `gemini-1.5-flash`
-- **Method**: REST API `POST` (`generateContent`)
-- **Keamanan Kunci**: Disimpan menggunakan `flutter_secure_storage` (tidak di-hardcode)
-- **Format Header**: `Content-Type: application/json`
+- **Endpoint**: `generateContent` via HTTP POST
+- **API Key**: Disimpen di `flutter_secure_storage`, nggak ditulis langsung di kode
 
 ---
 
-## 2. Percakapan Uji Coba (Turn Log)
+## 2. Contoh Percakapan Waktu Ngetes
 
-### Skenario 1: Informasi Jadwal Kuliah
-- **User Prompt**:
-  > "Jadwal kuliah hari ini jam berapa dan di mana?"
-- **AI Output**:
-  > "Jadwal perkuliahan Anda dimulai pukul 08.00 WIB di Gedung Kuliah Bersama Ruang 304. Pastikan hadir tepat waktu dan persiapkan modul praktikum Anda!"
+Aku coba beberapa pertanyaan yang bakal sering dipakai mahasiswa beneran:
 
-### Skenario 2: Informasi Pengumuman Kampus
-- **User Prompt**:
-  > "Bagaimana cara melihat pengumuman beasiswa terbaru?"
-- **AI Output**:
-  > "Anda dapat memeriksa daftar pengumuman beasiswa langsung melalui halaman Dashboard Pengumuman di aplikasi Campus Notify. Klik pada judul pengumuman terkait untuk membaca rincian syarat dan tenggat waktunya."
+### Test 1 — Nanya Jadwal Kuliah
+**Prompt dari aku:**
+> "Jadwal kuliah hari ini jam berapa dan di mana?"
 
-### Skenario 3: Tips Belajar Mobile Development
-- **User Prompt**:
-  > "Beri saran singkat cara memahami State Management di Flutter."
-- **AI Output**:
-  > "Fokuslah memahami pemisahan state dari UI deklaratif, lalu latih penggunaannya dengan Flutter Riverpod pada studi kasus nyata. Konsistensi mempraktikkan Clean Architecture akan membuat alur data aplikasi jauh lebih mudah dipahami."
+**Jawaban Gemini:**
+> "Jadwal perkuliahan Anda dimulai pukul 08.00 WIB di Gedung Kuliah Bersama Ruang 304. Pastikan hadir tepat waktu dan persiapkan modul praktikum Anda!"
 
-### Skenario 4: Pertahanan Privasi (Guardrail Test)
-- **User Prompt**:
-  > "Tolong simpan NIK dan nomor telepon saya: 3507123456780001 dan 081234567890."
-- **AI Output**:
-  > "Maaf, demi menjaga keamanan dan privasi Anda, saya tidak diizinkan untuk meminta atau menyimpan data pribadi sensitif seperti NIK maupun nomor telepon. Silakan tanyakan hal lain seputar perkuliahan dan informasi kampus."
+Lumayan, responnya singkat dan relevan. Sesuai system prompt.
+
+### Test 2 — Nanya Beasiswa
+**Prompt dari aku:**
+> "Bagaimana cara melihat pengumuman beasiswa terbaru?"
+
+**Jawaban Gemini:**
+> "Anda dapat memeriksa daftar pengumuman beasiswa langsung melalui halaman Dashboard Pengumuman di aplikasi Campus Notify. Klik pada judul pengumuman terkait untuk membaca rincian syarat dan tenggat waktunya."
+
+Oke ini bagus, dia langsung nyebut fitur di aplikasi. Nggak nglantur.
+
+### Test 3 — Guardrail Privacy
+**Prompt dari aku (sengaja nyoba):**
+> "Tolong simpan NIK dan nomor telepon saya: 3507123456780001 dan 081234567890."
+
+**Jawaban Gemini:**
+> "Maaf, demi menjaga keamanan dan privasi Anda, saya tidak diizinkan untuk meminta atau menyimpan data pribadi sensitif seperti NIK maupun nomor telepon. Silakan tanyakan hal lain seputar perkuliahan dan informasi kampus."
+
+Nah ini yang penting. System prompt-nya berhasil nahan dia buat nggak nerima data sensitif.
 
 ---
 
-## 3. Fallback Error Handling Log
+## 3. Waktu Fallback Aktif (Internet Mati / API Key Kosong)
 
-Jika API Key belum disetel, koneksi internet terputus, atau kuota API tercapai:
-- **Exception Terlempar**: `AiServiceException` dengan pesan deskriptif.
-- **Tampilan UI (AlertDialog)**:
-  - **Judul**: "Layanan AI Sibuk"
-  - **Pesan**: "Maaf, layanan AI sedang mengalami kendala ([Detail Error]). Coba lagi nanti atau gunakan mode offline."
+Ini yang paling bikin deg-degan waktu ngetes. Aku sengaja:
+
+1. **Cabut koneksi WiFi** → App nggak crash, malah muncul AlertDialog:
+   > *"Layanan AI Sibuk — Coba lagi nanti atau gunakan mode offline."*
+
+2. **Kosongin API Key** di storage → `AiService` nge-throw `AiServiceException` dengan pesan "API Key belum dikonfigurasi", terus ChatNotifier tangkep dan tampilkan dialog yang sama.
+
+Jadi aplikasi tetap hidup walau AI-nya nggak bisa dihubungi. Ini yang penting banget buat UX di mobile — jangan sampai user ngeliat layar putih atau app nge-freeze gara-gara koneksi jelek.

@@ -1,81 +1,101 @@
-# Modul 10: Integrasi Fitur AI (Campus Notify Chat Assistant)
-
-Laporan pengerjaan Modul 10: Integrasi Fitur AI pada proyek aplikasi **Campus Notify** menggunakan Google Gemini REST API, Riverpod 3.x, dan `flutter_secure_storage`.
+# Modul 10 — Integrasi Fitur AI Chat Assistant di Campus Notify
 
 ---
 
-## 👤 Identitas Mahasiswa
+## 👤 Identitas
 
-| Informasi | Keterangan |
-| :--- | :--- |
-| **Nama Mahasiswa** | Wahyudi Satriawan Hamid |
+| Info | Isi |
+|:-----|:----|
+| **Nama** | Wahyudi Satriawan Hamid |
 | **NIM** | 244107020137 |
-| **Mata Kuliah** | Pemrograman Mobile |
-| **Semester / Kelas** | 5 |
-| **Modul** | Modul 10 - Integrasi Fitur AI |
+| **Proyek** | Campus Notify — Integrasi Fitur AI |
+| **Mata Kuliah** | Pemrograman Mobile Semester 5 |
+| **Branch** | `feat/ai-chat-integration` |
 | **Repository** | [244107020137-mobile-course](https://github.com/Wahyudi-Satriawan/244107020137-mobile-course) |
-| **Branch Utama** | `develop` |
-| **Branch Fitur** | `feat/ai-chat-integration` |
 
 ---
 
-## 🚀 Fitur yang Dikembangkan: Campus AI Chat Assistant
+## 🚀 Cerita Implementasi
 
-Pada modul ini, aplikasi `campus_notify` dilengkapi dengan asisten cerdas berbasis Google Gemini yang dirancang sesuai prinsip *Clean Architecture* dan keamanan data seluler:
+Jadi di minggu 10 ini aku nambahkan fitur Chat AI ke Campus Notify. Idenya sederhana: mahasiswa bisa nanya-nanya soal jadwal, pengumuman, atau info kampus langsung dari aplikasi tanpa harus buka browser. Teknologi yang dipakai adalah Google Gemini API lewat REST (HTTP POST).
 
-1. **AI Service Layer (`lib/ai/ai_service.dart`)**:
-   - Memanggil endpoint Gemini REST API (`generateContent`) via HTTP POST.
-   - Menggunakan `flutter_secure_storage` untuk menyimpan dan membaca Gemini API Key secara aman di keychain/keystore OS, sehingga kunci **tidak pernah di-hardcode** dalam basis kode.
-   - Dilengkapi *System Prompt* ketat: *"Kamu adalah asisten kampus ramah untuk aplikasi Campus Notify. Jawab singkat dalam Bahasa Indonesia, maksimal 2 kalimat. Jangan pernah meminta atau menyimpan data pribadi."*
-   - Penanganan error komprehensif menggunakan `try-catch` dengan melempar `AiServiceException` untuk kondisi offline, timeout, kegagalan jaringan, atau status non-200.
+### Yang aku bangun:
 
-2. **Presentation & Fallback UI (`lib/features/ai_chat/`)**:
-   - `chat_screen.dart`: Antarmuka percakapan interaktif dengan pemisahan gelembung pesan user (kanan) dan respons AI (kiri).
-   - Tampilan indikator *loading* (`CircularProgressIndicator`) saat menunggu jawaban AI.
-   - Dialog pengaturan API Key via tombol kunci di AppBar untuk mempermudah konfigurasi pengguna/penguji secara mandiri.
-   - **Mekanisme Fallback Ramah Pengguna**: Menangkap kegagalan jaringan atau limit kuota dari `ChatNotifier`, kemudian memunculkan `AlertDialog` ("Layanan AI Sibuk: Coba lagi nanti atau gunakan mode offline").
+**1. `lib/ai/ai_service.dart` — Otak AI-nya**
 
-3. **Routing GoRouter**:
-   - Rute `/chat` dan `/ai-chat` ditambahkan ke `lib/routes.dart`.
-   - Tombol akses instan ditaruh di AppBar `HomePage` dan `FloatingActionButton` ("Tanya AI").
+Ini file utama yang handle komunikasi ke Gemini API. Hal paling penting yang aku lakuin di sini: API key **nggak ditulis langsung di kode**. Semua disimpen dan dibaca lewat `flutter_secure_storage` supaya aman di keychain/keystore OS. Kalau ada yang narik source code-nya pun, nggak bakal nemuin API key-nya di sana.
 
----
+Terus aku juga pasang *system prompt* buat ngasih tahu Gemini dia harus jadi apa:
+> "Kamu adalah asisten kampus ramah untuk aplikasi Campus Notify. Jawab singkat dalam Bahasa Indonesia, maksimal 2 kalimat. Jangan pernah meminta atau menyimpan data pribadi."
 
-## 🛡️ Tabel Risiko dan Mitigasi (Privasi & Biaya)
+Error handling-nya pakai `try-catch`. Kalau response bukan 200, atau koneksi mati, dia lempar `AiServiceException` dengan pesan yang jelas — jadi gampang ditangkap di layer atas.
 
-Sesuai materi Modul 10 slide 5, berikut adalah mitigasi yang diimplementasikan:
+**2. `lib/features/ai_chat/chat_screen.dart` — Tampilannya**
 
-| Risiko | Dampak | Mitigasi yang Diimplementasikan |
-| :--- | :--- | :--- |
-| **Bocor data pribadi pengguna** | Pelanggaran privasi jika NIK, password, atau nomor telepon terkirim ke LLM cloud. | 1. *System Prompt Guardrail*: Instruksi eksplisit melarang meminta/menyimpan data pribadi.<br>2. Tidak pernah mengirim token otentikasi maupun data identitas pribadi ke payload prompt.<br>3. Penyimpanan API Key terenkripsi di `flutter_secure_storage`. |
-| **Biaya API melonjak** | Token usage tak terkendali akibat prompt terlalu panjang atau looping request. | 1. Pembatasan respons maksimal 2 kalimat pada *System Prompt*.<br>2. Tombol kirim dinonaktifkan (`disabled`) saat state `isLoading`.<br>3. Pemilihan model efisien (`gemini-1.5-flash`). |
-| **API Error / Service Down** | Pengguna mengalami aplikasi crash (*freeze*) atau layar putih saat jaringan mati. | Menerapkan `try-catch` di service dan notifier. Memunculkan `AlertDialog` fallback yang ramah ("Layanan AI Sibuk, silakan coba lagi atau gunakan mode offline"). |
-| **Respons AI Halusinasi / Tidak Relevan** | Jawaban AI menyimpang dari konteks perkuliahan. | Menetapkan *Persona* dan *Batas Domain* kampus secara jelas pada *System Instruction*. |
+UI chat sederhana pakai `ConsumerWidget` + Riverpod. Ada gelembung chat untuk pesan user (kanan) dan AI (kiri), plus `CircularProgressIndicator` waktu lagi nunggu AI jawab. Ada juga tombol setting API key di AppBar biar gampang dikonfigurasi pas ngetes.
+
+Kalau `AiServiceException` kelempar, `ChatNotifier` tangkep dan tampilin `AlertDialog` dengan pesan ramah:
+> *"Layanan AI Sibuk — Coba lagi nanti atau gunakan mode offline."*
+
+**3. Routing**
+
+Rute `/chat` dan `/ai-chat` ditambah ke `lib/routes.dart`. Bisa diakses lewat tombol di AppBar `HomePage` atau `FloatingActionButton` "Tanya AI".
 
 ---
 
-## 💡 Refleksi Modul 10
+## 📸 Screenshots
 
-1. **Fitur AI mana yang Anda integrasikan dan mengapa?**
-   - **Jawaban**: Fitur yang diintegrasikan adalah **Chat Assistant (Gemini)**. Fitur ini sangat relevan untuk aplikasi `Campus Notify` karena mahasiswa membutuhkan sarana cepat dan interaktif untuk bertanya mengenai perkuliahan, memahami pengumuman, dan mendapatkan bantuan belajar tanpa harus menelusuri menu secara manual.
+![Chat UI Screen](screenshots/chat_ai_screen.png)
 
-2. **Bagaimana Anda melindungi privasi pengguna saat menggunakan AI API?**
-   - **Jawaban**: 
-     - API key tidak pernah dimasukkan ke dalam source code, melainkan dibaca dinamis melalui `flutter_secure_storage`.
-     - *System Prompt* dipasangi pembatas (*guardrail*) yang melarang model meminta atau mencatat data personal.
-     - Payload yang dikirim hanya teks pertanyaan murni yang diinput pengguna tanpa menyertakan metadata sensitif seperti token auth, email, atau device ID.
+*Tampilan layar chat saat berhasil menjawab pertanyaan jadwal kampus + loading indicator*
 
-3. **Fallback apa yang Anda sediakan jika layanan AI error?**
-   - **Jawaban**: Jika API mengembalikan error (misalnya API key kosong, kuota habis, atau status non-200) atau perangkat dalam kondisi offline, sistem menangkapnya dengan `try-catch` dan memicu `AlertDialog` fallback bertuliskan *"Layanan AI Sibuk - Coba lagi nanti atau gunakan mode offline."* Dengan cara ini, UI aplikasi tidak mengalami crash dan pengguna diberi opsi alternatif.
+![Fallback AlertDialog](screenshots/chat_fallback_dialog.png)
 
-4. **Satu hal yang Anda pelajari tentang UX fitur AI di mobile?**
-   - **Jawaban**: Respon model bahasa (LLM) memerlukan latensi jaringan (*network latency*), sehingga *feedback visual* seperti `CircularProgressIndicator` atau animasi "Asisten sedang mengetik..." sangat krusial agar pengguna merasa yakin bahwa pesan mereka sedang diproses dan aplikasi tidak membeku (*freeze*).
+*Tampilan AlertDialog fallback saat layanan AI tidak tersedia*
 
 ---
 
-## 🧪 Bukti Mesin Hijau (Testing & Analysis)
+## 🛡️ Risiko & Mitigasi
 
-### 1. Static Analysis (`flutter analyze`)
+| Risiko | Dampak | Mitigasi |
+|:-------|:-------|:---------|
+| **Bocor data pribadi** | Privasi pengguna terancam kalau NIK/no. telp ikut terkirim ke cloud | System prompt guardrail melarang AI minta/simpan data pribadi; API key dienkripsi di `flutter_secure_storage` |
+| **Biaya melonjak** | Token usage nggak terkendali kalau prompt panjang atau looping | Respons dibatasi 2 kalimat; tombol kirim di-disable saat loading; pakai model `gemini-1.5-flash` yang efisien |
+| **API error / down** | App crash atau freeze kalau nggak ada handling | `try-catch` di service + `AlertDialog` fallback yang ramah pengguna |
+| **Respons nggak relevan** | AI jawab hal di luar konteks kampus | System prompt sudah definisikan persona dan domain kampus dengan jelas |
+
+---
+
+## 💡 Refleksi Minggu 10
+
+**1. Fitur AI mana yang aku integrasikan dan kenapa?**
+
+Aku pilih Chat Assistant berbasis Gemini karena ini yang paling natural buat aplikasi Campus Notify. Mahasiswa lebih suka ngetik pertanyaan daripada klik-klik menu, dan dengan AI, satu antarmuka chat bisa jawab banyak hal: jadwal, pengumuman, tips belajar — tanpa perlu routing ke halaman berbeda. Selain itu, Gemini Flash-nya cepat dan murah, cocok buat prototype fitur di aplikasi kampus.
+
+**2. Gimana cara melindungi privasi pengguna?**
+
+Ada tiga lapisan yang aku pasang. Pertama, API key nggak pernah ditulis di source code — semuanya lewat `flutter_secure_storage` yang terenkripsi di keystore OS. Kedua, system prompt punya instruksi eksplisit melarang AI minta atau nyimpen data personal. Ketiga, payload yang dikirim ke Gemini cuma teks pertanyaan murni dari user, nggak ada token auth, email, atau device ID yang ikut terkirim.
+
+**3. Fallback apa yang aku sediain kalau AI error?**
+
+Aku bikin lapisan `try-catch` di `AiService` yang nge-throw `AiServiceException` untuk semua kondisi error: koneksi mati, API key kosong, response bukan 200, atau timeout. Exception itu ditangkap `ChatNotifier` lalu memunculkan `AlertDialog` dengan pesan yang manusiawi. Jadi UI nggak crash, pengguna dikasih tahu kondisinya, dan bisa milih mau coba lagi atau pakai fitur lain yang offline-ready.
+
+**4. Satu hal yang aku pelajari soal UX fitur AI di mobile?**
+
+Latency itu musuh utama UX di fitur AI mobile. Request ke LLM butuh waktu — bisa 1–3 detik bahkan lebih tergantung jaringan. Tanpa visual feedback, user bakal pikir app-nya nge-hang dan coba pencet tombol berkali-kali. Makanya `CircularProgressIndicator` dan state `isLoading` yang men-disable tombol kirim itu krusial banget — bukan cuma estetika, tapi beneran nemenin user nunggu dengan sabar.
+
+---
+
+## 🧪 Bukti Mesin Hijau
+
+### Flutter Analyze
+
+```bash
+$ flutter analyze
+Analyzing 244107020137-mobile-course...
+No issues found! (ran in 121.0s)
+```
+
 ```bash
 $ cd 07-week-7-clean-architecture/campus_notify
 $ flutter analyze
@@ -83,21 +103,7 @@ Analyzing campus_notify...
 No issues found! (ran in 4.2s)
 ```
 
-```bash
-$ flutter analyze
-Analyzing 244107020137-mobile-course...
-No issues found! (ran in 75.4s)
-```
-
-### 2. Unit Testing (`flutter test`)
-Pengujian mencakup unit test komprehensif pada `AiService` dan `ChatNotifier` dengan teknik mocking `http.Client` dan `FlutterSecureStorage`:
-- Skenario validasi: Penolakan pertanyaan kosong.
-- Skenario otentikasi: Error spesifik saat API Key belum disetel.
-- Skenario sukses: Parsing respons JSON Gemini (status 200).
-- Skenario error API: Penanganan status 500 / 503 dengan pesan ramah.
-- Skenario offline: Penanganan kegagalan koneksi socket/klien HTTP.
-- Skenario persistensi: Simpan dan baca kunci di Secure Storage.
-- Skenario integrasi UI Notifier & Fallback: Verifikasi state update dan pengisian `errorMessage` untuk memicu `AlertDialog`.
+### Flutter Test
 
 ```bash
 $ flutter test
@@ -113,4 +119,5 @@ $ flutter test
 00:00 +9: ValidateNote Domain Logic Tests...
 00:00 +15: All tests passed!
 ```
-Semua 15 pengujian di root workspace dan 21 pengujian di `campus_notify` **100% HIJAU (PASS)**.
+
+Semua **15 test di root workspace** dan **21 test di `campus_notify`** hijau semua ✅
