@@ -3,6 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/chat_providers.dart';
 
+/// Screen utama untuk fitur AI Campus Assistant.
+/// Telah dioptimasi performanya dengan:
+/// 1. Pemisahan widget tree ke class terpisah untuk memaksimalkan widget reuse.
+/// 2. Penggunaan `ref.watch(provider.select(...))` untuk mencegah rebuild berlebih.
+/// 3. Isolasi animasi paint dengan `RepaintBoundary` pada loading bubble.
+/// 4. Penerapan `const` constructor di seluruh subtree statis.
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -33,11 +39,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
-  Future<void> _handleSend() async {
-    final text = _textController.text;
+  Future<void> _handleSend([String? customText]) async {
+    final text = customText ?? _textController.text;
     if (text.trim().isEmpty) return;
 
-    _textController.clear();
+    if (customText == null) {
+      _textController.clear();
+    }
     _scrollToBottom();
 
     await ref.read(chatNotifierProvider.notifier).sendMessage(text);
@@ -106,38 +114,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Fallback error listener using AlertDialog
-    ref.listen<ChatState>(chatNotifierProvider, (previous, next) {
-      if (next.errorMessage != null &&
-          next.errorMessage != previous?.errorMessage) {
-        showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('Layanan AI Sibuk'),
+    // Listener untuk fallback dialog jika layanan AI sibuk / error
+    ref.listen<String?>(
+      chatNotifierProvider.select((s) => s.errorMessage),
+      (previous, next) {
+        if (next != null && next != previous) {
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Layanan AI Sibuk'),
+                ],
+              ),
+              content: Text(
+                '$next\n\nCoba lagi nanti atau gunakan mode offline.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    ref.read(chatNotifierProvider.notifier).clearError();
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Tutup'),
+                ),
               ],
             ),
-            content: Text(
-              '${next.errorMessage}\n\nCoba lagi nanti atau gunakan mode offline.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  ref.read(chatNotifierProvider.notifier).clearError();
-                  Navigator.of(ctx).pop();
-                },
-                child: const Text('Tutup'),
-              ),
-            ],
-          ),
-        );
-      }
-    });
-
-    final chatState = ref.watch(chatNotifierProvider);
+          );
+        }
+      },
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -159,34 +167,71 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: chatState.messages.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    itemCount:
-                        chatState.messages.length +
-                        (chatState.isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index < chatState.messages.length) {
-                        final msg = chatState.messages[index];
-                        return _buildChatBubble(msg);
-                      } else {
-                        return _buildLoadingBubble();
-                      }
-                    },
-                  ),
+            child: _ChatMessagesView(
+              scrollController: _scrollController,
+              onSuggestionSelected: (prompt) => _handleSend(prompt),
+            ),
           ),
-          _buildInputBar(chatState.isLoading),
+          _ChatInputBar(
+            controller: _textController,
+            onSend: () => _handleSend(),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
+/// Widget terpisah untuk menampilkan daftar percakapan.
+/// Menggunakan `select` untuk mendengarkan perubahan daftar pesan dan status loading.
+class _ChatMessagesView extends ConsumerWidget {
+  final ScrollController scrollController;
+  final ValueChanged<String> onSuggestionSelected;
+
+  const _ChatMessagesView({
+    required this.scrollController,
+    required this.onSuggestionSelected,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = ref.watch(chatNotifierProvider.select((s) => s.messages));
+    final isLoading = ref.watch(chatNotifierProvider.select((s) => s.isLoading));
+
+    if (messages.isEmpty) {
+      return EmptyChatView(onSuggestionSelected: onSuggestionSelected);
+    }
+
+    return ListView.builder(
+      controller: scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: messages.length + (isLoading ? 1 : 0),
+      addRepaintBoundaries: true,
+      itemBuilder: (context, index) {
+        if (index < messages.length) {
+          final msg = messages[index];
+          return ChatBubbleItem(msg: msg);
+        } else {
+          // RepaintBoundary mengisolasi animasi indikator pemuatan
+          return const RepaintBoundary(
+            child: LoadingBubbleWidget(),
+          );
+        }
+      },
+    );
+  }
+}
+
+/// Widget statis tampilan awal kosong saat belum ada pesan.
+class EmptyChatView extends StatelessWidget {
+  final ValueChanged<String> onSuggestionSelected;
+
+  const EmptyChatView({super.key, required this.onSuggestionSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -196,13 +241,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: colorScheme.primaryContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.support_agent,
                 size: 56,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -224,24 +269,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               children: [
                 ActionChip(
                   label: const Text('Jadwal kuliah hari ini?'),
-                  onPressed: () {
-                    _textController.text = 'Jadwal kuliah hari ini?';
-                    _handleSend();
-                  },
+                  onPressed: () =>
+                      onSuggestionSelected('Jadwal kuliah hari ini?'),
                 ),
                 ActionChip(
                   label: const Text('Cara melihat pengumuman?'),
-                  onPressed: () {
-                    _textController.text = 'Cara melihat pengumuman?';
-                    _handleSend();
-                  },
+                  onPressed: () =>
+                      onSuggestionSelected('Cara melihat pengumuman?'),
                 ),
                 ActionChip(
                   label: const Text('Tips belajar mobile dev'),
-                  onPressed: () {
-                    _textController.text = 'Tips belajar mobile dev';
-                    _handleSend();
-                  },
+                  onPressed: () =>
+                      onSuggestionSelected('Tips belajar mobile dev'),
                 ),
               ],
             ),
@@ -250,17 +289,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+}
 
-  Widget _buildChatBubble(ChatMessage msg) {
+/// Widget item gelembung percakapan terisolasi.
+class ChatBubbleItem extends StatelessWidget {
+  final ChatMessage msg;
+
+  const ChatBubbleItem({super.key, required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUser = msg.isUser;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -309,8 +355,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+}
 
-  Widget _buildLoadingBubble() {
+/// Widget indikator pemuatan respons asisten AI yang dibungkus RepaintBoundary.
+class LoadingBubbleWidget extends StatelessWidget {
+  const LoadingBubbleWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -353,8 +405,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+}
 
-  Widget _buildInputBar(bool isLoading) {
+/// Widget input teks dan tombol kirim terpisah.
+/// Hanya me-rebuild saat `isLoading` berubah berkat `ref.watch(provider.select(...))`.
+class _ChatInputBar extends ConsumerWidget {
+  final TextEditingController controller;
+  final VoidCallback onSend;
+
+  const _ChatInputBar({
+    required this.controller,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Isolasi rebuild: hanya mendengarkan status isLoading
+    final isLoading = ref.watch(chatNotifierProvider.select((s) => s.isLoading));
+
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -372,10 +440,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             Expanded(
               child: TextField(
-                controller: _textController,
+                controller: controller,
                 enabled: !isLoading,
                 textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _handleSend(),
+                onSubmitted: (_) => onSend(),
                 decoration: const InputDecoration(
                   hintText: 'Tulis pertanyaan untuk asisten kampus...',
                   border: InputBorder.none,
@@ -395,7 +463,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     )
                   : const Icon(Icons.send),
               color: Theme.of(context).colorScheme.primary,
-              onPressed: isLoading ? null : _handleSend,
+              onPressed: isLoading ? null : onSend,
             ),
           ],
         ),

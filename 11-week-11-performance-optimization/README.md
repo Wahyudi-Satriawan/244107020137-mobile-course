@@ -1,123 +1,109 @@
-# Modul 10 — Integrasi Fitur AI Chat Assistant di Campus Notify
+# Modul 11 — Optimasi Performa Aplikasi Mobile (Campus Notify)
 
 ---
 
-## 👤 Identitas
+## 👤 Identitas Mahasiswa
 
-| Info | Isi |
-|:-----|:----|
+| Atribut | Keterangan |
+|:---|:---|
 | **Nama** | Wahyudi Satriawan Hamid |
 | **NIM** | 244107020137 |
-| **Proyek** | Campus Notify — Integrasi Fitur AI |
+| **Proyek** | Campus Notify — Optimasi Performa (Week 11) |
 | **Mata Kuliah** | Pemrograman Mobile Semester 5 |
-| **Branch** | `feat/ai-chat-integration` |
-| **Repository** | [244107020137-mobile-course](https://github.com/Wahyudi-Satriawan/244107020137-mobile-course) |
+| **Repositori** | [244107020137-mobile-course](https://github.com/Wahyudi-Satriawan/244107020137-mobile-course) |
+| **Direktori Modul** | `11-week-11-performance-optimization` |
 
 ---
 
-## 🚀 Cerita Implementasi
+## 🚀 Ringkasan Pelaksanaan Modul 11
 
-Jadi di minggu 10 ini aku nambahkan fitur Chat AI ke Campus Notify. Idenya sederhana: mahasiswa bisa nanya-nanya soal jadwal, pengumuman, atau info kampus langsung dari aplikasi tanpa harus buka browser. Teknologi yang dipakai adalah Google Gemini API lewat REST (HTTP POST).
+Pada modul praktikum ini, aplikasi **Campus Notify** dioptimalkan secara komprehensif untuk meningkatkan efisiensi komputasi pada **UI Thread**, mengurangi beban *rendering* pada **Raster Thread**, serta menekan konsumsi **Memory (RAM/Heap)**. Seluruh optimasi diterapkan tanpa merusak kaidah *Clean Architecture* dan manajemen state Riverpod.
 
-### Yang aku bangun:
+### Teknik Optimasi yang Diterapkan:
 
-**1. `lib/ai/ai_service.dart` — Otak AI-nya**
+1. **Pengurangan Widget Rebuild & Isolasi Paint (`ChatScreen`)**:
+   * Menghilangkan pembacaan *state* global `ref.watch(chatNotifierProvider)` di tingkat *root build*.
+   * Menggunakan selektor granular `ref.watch(chatNotifierProvider.select((s) => s.isLoading))` dan `ref.watch(chatNotifierProvider.select((s) => s.messages))` agar *rebuild* hanya terjadi pada komponen yang mengalami perubahan nilai.
+   * Mengekstrak sub-tree antarmuka ke widget kelas terpisah (`_ChatInputBar`, `_ChatMessagesView`, `ChatBubbleItem`, dan `EmptyChatView`) serta menerapkan constructor `const`.
+   * Membungkus komponen animasi pemuatan berputar (`CircularProgressIndicator`) dengan **`RepaintBoundary`** untuk mengisolasi *dirty repaint* 60 FPS agar tidak memicu komposit ulang pada layer obrolan di sekitarnya.
 
-Ini file utama yang handle komunikasi ke Gemini API. Hal paling penting yang aku lakuin di sini: API key **nggak ditulis langsung di kode**. Semua disimpen dan dibaca lewat `flutter_secure_storage` supaya aman di keychain/keystore OS. Kalau ada yang narik source code-nya pun, nggak bakal nemuin API key-nya di sana.
+2. **Optimasi Memori Grafis & Disk Caching (`CachedNetworkImage`)**:
+   * Mengintegrasikan pustaka `cached_network_image` pada [pubspec.yaml](pubspec.yaml).
+   * Menerapkan parameter pembatas dimensi decode: `memCacheWidth: 120` dan `memCacheHeight: 120` pada thumbnail [announcement_tile.dart](lib/features/announcements/presentation/widgets/announcement_tile.dart) serta `memCacheWidth: 600` pada banner [announcement_page.dart](lib/features/announcements/presentation/pages/announcement_page.dart).
+   * Mencegah pemborosan memori grafis hingga >99% per gambar (menghindari decoding gambar mentah $4000 \times 3000$ yang memakan ~48 MB RAM) dan mengeliminasi jank saat scrolling.
 
-Terus aku juga pasang *system prompt* buat ngasih tahu Gemini dia harus jadi apa:
-> "Kamu adalah asisten kampus ramah untuk aplikasi Campus Notify. Jawab singkat dalam Bahasa Indonesia, maksimal 2 kalimat. Jangan pernah meminta atau menyimpan data pribadi."
+3. **Optimasi List Rendering & Lazy Loading (`NotesList` & `HomePage`)**:
+   * Memastikan seluruh daftar item dirender menggunakan `ListView.builder` dengan konfigurasi `addAutomaticKeepAlives: false` dan `addRepaintBoundaries: true`.
+   * Mengekstrak `NoteItemTile` menjadi widget mandiri untuk memfasilitasi *widget reuse* dan pembuangan instans di luar *viewport*.
 
-Error handling-nya pakai `try-catch`. Kalau response bukan 200, atau koneksi mati, dia lempar `AiServiceException` dengan pesan yang jelas — jadi gampang ditangkap di layer atas.
-
-**2. `lib/features/ai_chat/chat_screen.dart` — Tampilannya**
-
-UI chat sederhana pakai `ConsumerWidget` + Riverpod. Ada gelembung chat untuk pesan user (kanan) dan AI (kiri), plus `CircularProgressIndicator` waktu lagi nunggu AI jawab. Ada juga tombol setting API key di AppBar biar gampang dikonfigurasi pas ngetes.
-
-Kalau `AiServiceException` kelempar, `ChatNotifier` tangkep dan tampilin `AlertDialog` dengan pesan ramah:
-> *"Layanan AI Sibuk — Coba lagi nanti atau gunakan mode offline."*
-
-**3. Routing**
-
-Rute `/chat` dan `/ai-chat` ditambah ke `lib/routes.dart`. Bisa diakses lewat tombol di AppBar `HomePage` atau `FloatingActionButton` "Tanya AI".
-
----
-
-## 📸 Screenshots
-
-![Chat UI Screen](screenshots/chat_ai_screen.png)
-
-*Tampilan layar chat saat berhasil menjawab pertanyaan jadwal kampus + loading indicator*
-
-![Fallback AlertDialog](screenshots/chat_fallback_dialog.png)
-
-*Tampilan AlertDialog fallback saat layanan AI tidak tersedia*
+4. **In-Memory Caching Repositori (Stale-While-Revalidate di `NoteRepositoryImpl`)**:
+   * Menambahkan *in-memory cache* dengan durasi kedaluwarsa 30 detik pada layer repositori catatan.
+   * Menghilangkan operasi I/O berulang ke database SQLite saat navigasi tab atau *rebuild*, mentransformasikan pencarian disk menjadi pembacaan referensi RAM berkecepatan $\mathcal{O}(1)$.
 
 ---
 
-## 🛡️ Risiko & Mitigasi
+## 📑 Dokumen Hasil Analisis dan Laporan
 
-| Risiko | Dampak | Mitigasi |
-|:-------|:-------|:---------|
-| **Bocor data pribadi** | Privasi pengguna terancam kalau NIK/no. telp ikut terkirim ke cloud | System prompt guardrail melarang AI minta/simpan data pribadi; API key dienkripsi di `flutter_secure_storage` |
-| **Biaya melonjak** | Token usage nggak terkendali kalau prompt panjang atau looping | Respons dibatasi 2 kalimat; tombol kirim di-disable saat loading; pakai model `gemini-1.5-flash` yang efisien |
-| **API error / down** | App crash atau freeze kalau nggak ada handling | `try-catch` di service + `AlertDialog` fallback yang ramah pengguna |
-| **Respons nggak relevan** | AI jawab hal di luar konteks kampus | System prompt sudah definisikan persona dan domain kampus dengan jelas |
+Laporan akademis dan analisis temuan performa telah disusun secara lengkap pada folder `docs/`:
+1. 📄 **[Laporan Temuan Bottleneck (docs/performance-findings.md)](docs/performance-findings.md)**: Analisis teoritis 3 masalah performa (UI Thread, Raster Thread, Memory) sebelum optimasi.
+2. 📄 **[Laporan Utama Praktikum (docs/performance-report.md)](docs/performance-report.md)**: Draf laporan praktikum resmi berisi baseline metrics, panduan screenshot Flame Chart, penjelasan teknis, dan jawaban refleksi pembelajaran.
 
 ---
 
-## 💡 Refleksi Minggu 10
+## 🧪 Bukti Validasi Mesin Hijau
 
-**1. Fitur AI mana yang aku integrasikan dan kenapa?**
-
-Aku pilih Chat Assistant berbasis Gemini karena ini yang paling natural buat aplikasi Campus Notify. Mahasiswa lebih suka ngetik pertanyaan daripada klik-klik menu, dan dengan AI, satu antarmuka chat bisa jawab banyak hal: jadwal, pengumuman, tips belajar — tanpa perlu routing ke halaman berbeda. Selain itu, Gemini Flash-nya cepat dan murah, cocok buat prototype fitur di aplikasi kampus.
-
-**2. Gimana cara melindungi privasi pengguna?**
-
-Ada tiga lapisan yang aku pasang. Pertama, API key nggak pernah ditulis di source code — semuanya lewat `flutter_secure_storage` yang terenkripsi di keystore OS. Kedua, system prompt punya instruksi eksplisit melarang AI minta atau nyimpen data personal. Ketiga, payload yang dikirim ke Gemini cuma teks pertanyaan murni dari user, nggak ada token auth, email, atau device ID yang ikut terkirim.
-
-**3. Fallback apa yang aku sediain kalau AI error?**
-
-Aku bikin lapisan `try-catch` di `AiService` yang nge-throw `AiServiceException` untuk semua kondisi error: koneksi mati, API key kosong, response bukan 200, atau timeout. Exception itu ditangkap `ChatNotifier` lalu memunculkan `AlertDialog` dengan pesan yang manusiawi. Jadi UI nggak crash, pengguna dikasih tahu kondisinya, dan bisa milih mau coba lagi atau pakai fitur lain yang offline-ready.
-
-**4. Satu hal yang aku pelajari soal UX fitur AI di mobile?**
-
-Latency itu musuh utama UX di fitur AI mobile. Request ke LLM butuh waktu — bisa 1–3 detik bahkan lebih tergantung jaringan. Tanpa visual feedback, user bakal pikir app-nya nge-hang dan coba pencet tombol berkali-kali. Makanya `CircularProgressIndicator` dan state `isLoading` yang men-disable tombol kirim itu krusial banget — bukan cuma estetika, tapi beneran nemenin user nunggu dengan sabar.
-
----
-
-## 🧪 Bukti Mesin Hijau
-
-### Flutter Analyze
-
+### 1. Analisis Statis (`flutter analyze`)
 ```bash
 $ flutter analyze
-Analyzing 244107020137-mobile-course...
-No issues found! (ran in 121.0s)
+Analyzing 11-week-11-performance-optimization...
+No issues found! (ran in 98.1s)
 ```
 
-```bash
-$ cd 07-week-7-clean-architecture/campus_notify
-$ flutter analyze
-Analyzing campus_notify...
-No issues found! (ran in 4.2s)
-```
-
-### Flutter Test
-
+### 2. Pengujian Unit (`flutter test`)
 ```bash
 $ flutter test
 00:00 +0: loading test/ai_service_test.dart
-00:00 +1: AiService Unit Tests Gagal jika API Key belum tersedia di storage
-00:00 +2: AiService Unit Tests Gagal jika pertanyaan kosong
-00:00 +3: AiService Unit Tests Sukses parsing respon Gemini saat status 200
-00:00 +4: AiService Unit Tests Melempar AiServiceException spesifik jika API mengembalikan status error
-00:00 +5: AiService Unit Tests Melempar AiServiceException jika terjadi kegagalan jaringan (offline)
-00:00 +6: AiService Unit Tests Simpan dan baca API Key di Secure Storage berjalan dengan baik
-00:00 +7: ChatNotifier & Fallback Logic Tests Mengirim pesan sukses memperbarui list pesan dan status loading
-00:00 +8: ChatNotifier & Fallback Logic Tests Menangkap error dan mengisi errorMessage saat AI gagal merespons (Fallback)
-00:00 +9: ValidateNote Domain Logic Tests...
-00:00 +15: All tests passed!
+...
+00:00 +21: All tests passed!
 ```
 
-Semua **15 test di root workspace** dan **21 test di `campus_notify`** hijau semua ✅
+### 3. Kompilasi Profile Mode (`flutter build apk --profile`)
+```bash
+$ flutter build apk --profile
+Running Gradle task 'assembleProfile'...
+√ Built build\app\outputs\flutter-apk\app-profile.apk (71.2MB)
+```
+
+---
+
+## 📂 Struktur Berkas Modul 11
+
+```text
+11-week-11-performance-optimization/
+├── docs/
+│   ├── performance-findings.md      # Laporan analisis 3 bottleneck awal
+│   └── performance-report.md        # Laporan utama praktikum & refleksi
+├── lib/
+│   ├── ai/
+│   ├── core/
+│   ├── features/
+│   │   ├── ai_chat/
+│   │   │   └── presentation/pages/chat_screen.dart   # Dioptimasi: select, widget splitting, RepaintBoundary
+│   │   ├── announcements/
+│   │   │   ├── domain/entities/announcement.dart     # Ditambahkan properti imageUrl
+│   │   │   ├── presentation/pages/home_page.dart     # Dioptimasi: ListView.builder
+│   │   │   ├── presentation/pages/announcement_page.dart # Dioptimasi: CachedNetworkImage (memCacheWidth: 600)
+│   │   │   └── presentation/widgets/announcement_tile.dart # Dioptimasi: CachedNetworkImage (memCacheWidth: 120)
+│   │   ├── auth/
+│   │   └── notes/
+│   │       ├── data/repositories/note_repository_impl.dart # Dioptimasi: in-memory cache Stale-While-Revalidate
+│   │       └── presentation/widgets/notes_list.dart       # Dioptimasi: NoteItemTile & lazy properties
+│   ├── main.dart
+│   └── routes.dart
+├── screenshots/
+│   ├── before-profile.png           # Tempatkan screenshot DevTools Flame Chart sebelum optimasi
+│   └── after-profile.png            # Tempatkan screenshot DevTools Flame Chart setelah optimasi
+├── test/
+├── pubspec.yaml                     # Ditambahkan cached_network_image: ^3.4.1
+└── README.md
+```
