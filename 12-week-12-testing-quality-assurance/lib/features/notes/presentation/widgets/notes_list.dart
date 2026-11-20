@@ -35,6 +35,7 @@ class NoteItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      key: note.id != null ? Key('note-card-${note.id}') : null,
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: const CircleAvatar(
