@@ -50,3 +50,7 @@ app.*.map.json
 # Firebase / Secret Credentials
 android/app/google-services.json
 
+# Coverage artifacts
+coverage/
+
+
